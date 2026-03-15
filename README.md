@@ -1,73 +1,197 @@
-# Welcome to your Lovable project
+# Z-Pilot UI
 
-## Project info
+> Talk to your home. Voice-first AI interface for Z-Pilot server.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+```
+         ◉  Z-Pilot
+      AI Assistant
+         00:42
 
-## How can I edit this code?
+  ┌─────────────────────┐
+  │  "Turn on the light"│
+  └─────────────────────┘
+     ✦ Done. Light is on.
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+  [🎤]  [🔊]  [📎]  [📵]
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## What it is
 
-**Use GitHub Codespaces**
+A calling-style web app that connects to your [Z-Pilot server](../zpilot/) over Tailscale.
+Open it, tap **Call**, and talk to your home AI — voice in, voice out.
+Ask it to control lights, fans, doors, or pull up a live ESP32-CAM feed.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Stack
 
-This project is built with:
+| | |
+|---|---|
+| Framework | Vite + React 18 |
+| Styling | Raw CSS — no Tailwind, no UI lib |
+| Voice | Web Speech API (browser-native) |
+| Transport | `fetch()` — no axios |
+| Fonts | DM Sans + JetBrains Mono |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Quick start
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```bash
+git clone <your-repo>
+cd zpilot-ui
 
-## Can I connect a custom domain to my Lovable project?
+npm install
 
-Yes, you can!
+cp .env.example .env
+# → set VITE_SERVER_URL to your Tailscale URL
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+npm run dev
+# → http://localhost:5173
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## Environment
+
+```bash
+# .env
+VITE_SERVER_URL=https://zpilot.tail1234.ts.net
+```
+
+Replace `zpilot.tail1234.ts.net` with your actual Tailscale machine URL.
+For local dev only: `http://localhost:8000`
+
+---
+
+## How it works
+
+```
+You speak
+   │
+   ▼
+Web Speech API (browser)
+   │  transcript
+   ▼
+POST /chat  ──────────────────────▶  Z-Pilot Server (FastAPI)
+                                            │
+                                            ▼
+                                       Groq LLM
+                                            │
+                              ┌─────────────┴─────────────┐
+                              │                           │
+                         text reply                  action block
+                              │                           │
+                              ▼                     ┌─────┴──────┐
+                        AI bubble               gpio │            │ cam
+                                                     ▼            ▼
+                                              ESP32 HTTP    open proxy
+                                              pin toggle    stream URL
+```
+
+**Camera streams never reach the AI.** When you say "show me the garage", the server returns a proxy URL — the browser opens it directly as an `<img>` tag. The LLM sees nothing.
+
+---
+
+## Screens
+
+| Screen | Trigger |
+|--------|---------|
+| **Idle** | App opens — shows avatar + Call button |
+| **Calling** | Call button tapped — server health check passes |
+| **Ended** | Hang up tapped — shows duration, returns to Idle after 2s |
+
+---
+
+## Controls
+
+| Button | Action |
+|--------|--------|
+| 🎤 Mic | Tap to start listening · tap again to send · pulse ring = active |
+| 🔊 Speaker | Toggle speaker on/off |
+| 📎 Image | Attach a photo — sent with your next voice message |
+| 📵 Hang up | End call, return to idle |
+
+---
+
+## Live cam stream
+
+When the AI opens a camera feed, an overlay slides up:
+
+```
+┌─────────────────────────────┐
+│  Live View: Garage        ✕ │
+├─────────────────────────────┤
+│                             │
+│   < MJPEG feed via proxy >  │
+│                             │
+├─────────────────────────────┤
+│  ▶ LIVE        ⇌ Streaming  │
+└─────────────────────────────┘
+```
+
+The stream goes through the server proxy (`/cam-stream/<device_id>`) to avoid
+mixed-content and CORS issues when accessing LAN cameras over Tailscale HTTPS.
+
+---
+
+## Project structure
+
+```
+zpilot-ui/
+├── index.html
+├── vite.config.js
+├── .env.example
+└── src/
+    ├── App.jsx               ← screen state machine
+    ├── App.css               ← CSS variables + global styles
+    ├── screens/
+    │   ├── IdleScreen.jsx    ← avatar + call button
+    │   ├── CallingScreen.jsx ← active call UI
+    │   └── EndedScreen.jsx   ← call ended + duration
+    ├── components/
+    │   ├── Avatar.jsx
+    │   ├── CallTimer.jsx     ← mm:ss counter
+    │   ├── ChatFeed.jsx      ← message bubbles
+    │   ├── CamOverlay.jsx    ← MJPEG stream overlay
+    │   ├── ControlBar.jsx    ← 4 bottom buttons
+    │   └── GpioCard.jsx      ← inline GPIO result card
+    └── hooks/
+        ├── useSpeech.js      ← Web Speech API wrapper
+        └── useApi.js         ← fetch wrappers + camStreamUrl()
+```
+
+---
+
+## Server
+
+This app talks to the **Z-Pilot FastAPI server**.
+See [`../zpilot/README.md`](../zpilot/README.md) for setup.
+
+Required endpoints:
+
+```
+GET  /health                     → server alive check
+POST /chat                       → main AI endpoint
+GET  /devices                    → list ESP32 devices
+POST /gpio                       → direct GPIO control
+GET  /cam-stream/:device_id      → MJPEG proxy
+```
+
+---
+
+## Browser support
+
+| Browser | Voice input |
+|---------|------------|
+| Chrome / Edge | ✅ Full support |
+| Safari (iOS 17+) | ✅ Works |
+| Firefox | ⚠️ No Web Speech API — mic button hidden |
+
+---
+
+## License
+
+MIT
