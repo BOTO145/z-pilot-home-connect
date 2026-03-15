@@ -5,7 +5,7 @@ import ChatFeed from '../components/ChatFeed';
 import CamOverlay from '../components/CamOverlay';
 import ControlBar from '../components/ControlBar';
 import { useSpeech } from '../hooks/useSpeech';
-import { sendChat } from '../hooks/useApi';
+import { sendChat, camStreamUrl } from '../hooks/useApi';
 
 interface Message {
   id: number;
