@@ -1,27 +1,35 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { useState, useCallback } from 'react';
+import IdleScreen from './screens/IdleScreen';
+import CallingScreen from './screens/CallingScreen';
+import EndedScreen from './screens/EndedScreen';
+import './index.css';
 
-const queryClient = new QueryClient();
+type Screen = 'idle' | 'calling' | 'ended';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [screen, setScreen] = useState<Screen>('idle');
+  const [callStart, setCallStart] = useState<Date>(new Date());
+
+  const handleCallStart = useCallback(() => {
+    setCallStart(new Date());
+    setScreen('calling');
+  }, []);
+
+  const handleHangUp = useCallback(() => {
+    setScreen('ended');
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setScreen('idle');
+  }, []);
+
+  return (
+    <>
+      {screen === 'idle' && <IdleScreen onCallStart={handleCallStart} />}
+      {screen === 'calling' && <CallingScreen callStart={callStart} onHangUp={handleHangUp} />}
+      {screen === 'ended' && <EndedScreen callStart={callStart} onReset={handleReset} />}
+    </>
+  );
+};
 
 export default App;
