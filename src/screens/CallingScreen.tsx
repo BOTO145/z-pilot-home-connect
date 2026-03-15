@@ -48,7 +48,7 @@ const CallingScreen = ({ callStart, onHangUp }: CallingScreenProps) => {
       setMessages(prev => [...prev, aiMsg]);
 
       if (data.action?.type === 'cam') {
-        setCamStream({ url: data.action.stream_url, label: data.action.device_id });
+        setCamStream({ url: camStreamUrl(data.action.stream_url), label: data.action.device_id });
       }
     } catch {
       setMessages(prev => [...prev, {

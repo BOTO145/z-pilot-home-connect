@@ -17,3 +17,7 @@ export async function getDevices() {
   const res = await fetch(`${BASE_URL}/devices`);
   return res.json();
 }
+
+export function camStreamUrl(streamPath: string) {
+  return `${BASE_URL}${streamPath}`;
+}
