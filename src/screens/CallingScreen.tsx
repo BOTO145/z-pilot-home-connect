@@ -5,7 +5,7 @@ import ChatFeed from '../components/ChatFeed';
 import CamOverlay from '../components/CamOverlay';
 import ControlBar from '../components/ControlBar';
 import { useSpeech } from '../hooks/useSpeech';
-import { sendChat } from '../hooks/useApi';
+import { sendChat, camStreamUrl } from '../hooks/useApi';
 
 interface Message {
   id: number;
@@ -48,7 +48,7 @@ const CallingScreen = ({ callStart, onHangUp }: CallingScreenProps) => {
       setMessages(prev => [...prev, aiMsg]);
 
       if (data.action?.type === 'cam') {
-        setCamStream({ url: data.action.stream_url, label: data.action.device_id });
+        setCamStream({ url: camStreamUrl(data.action.stream_url), label: data.action.device_id });
       }
     } catch {
       setMessages(prev => [...prev, {
