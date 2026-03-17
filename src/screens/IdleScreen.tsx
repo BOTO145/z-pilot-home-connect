@@ -6,7 +6,7 @@ interface IdleScreenProps {
   onCallStart: () => void;
 }
 
-const BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://andlab.ratfish-miaplacidus.ts.net:8000';
+const BASE_URL = import.meta.env.VITE_SERVER_URL || 'https://6a90-117-203-153-128.ngrok-free.app/';
 const displayUrl = BASE_URL.replace(/^https?:\/\//, '');
 
 const IdleScreen = ({ onCallStart }: IdleScreenProps) => {
